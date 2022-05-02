@@ -3,7 +3,7 @@ using System.IO;
 using System.Net.Mail;
 using System.Threading.Tasks;
 
-namespace Flipdish.Recruiting.WebhookReceiver
+namespace Flipdish.Recruiting.WebHookReceiver
 {
     class EmailService
     {

@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Flipdish.Recruiting.WebhookReceiver.Models
+namespace Flipdish.Recruiting.WebHookReceiver.Models
 {
-    public class OrderCreatedWebhook
+    public class OrderCreatedWebHook
     {
         public string Type { get; set; }
 

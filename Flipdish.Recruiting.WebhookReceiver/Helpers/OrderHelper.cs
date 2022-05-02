@@ -1,12 +1,12 @@
-using Flipdish.Recruiting.WebhookReceiver.Models;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Threading;
+using Flipdish.Recruiting.WebHookReceiver.Models;
 
-namespace Flipdish.Recruiting.WebhookReceiver.Helpers
+namespace Flipdish.Recruiting.WebHookReceiver.Helpers
 {
     public static class OrderHelper
     {

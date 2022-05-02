@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Flipdish.Recruiting.WebhookReceiver.Models
+namespace Flipdish.Recruiting.WebHookReceiver.Models
 {
     public class CurrencyItem
     {
