@@ -54,7 +54,7 @@ namespace Flipdish.Recruiting.WebHookReceiver
                 var storeIds = ParseStoreIds(storeIdParams);
                 if (!storeIds.Any()){
                         log.LogInformation($"No Store ID Skipping order #{orderId}");
-                        return new ContentResult { Content = $"Skipping order #{orderId}", ContentType = "text/html" };
+                        return new ContentResult { Content = $"No Store ID Skipping order #{orderId}", ContentType = "text/html" };
                 }
                 
                 var currency = CurrencyToUpper(req.Query["currency"].FirstOrDefault());
@@ -63,7 +63,8 @@ namespace Flipdish.Recruiting.WebHookReceiver
                 try
                 {
                     var renderer = new EmailRenderer(orderCreatedEvent.Order, orderCreatedEvent.AppId, barcodeMetadataKey, context.FunctionAppDirectory, log, (Currency)currency);
-                    await EmailService.Send("", req.Query["to"], $"New Order #{orderId}", renderer.RenderEmailOrder(), renderer._imagesWithNames);
+                    //make this configurable to on or off and set up email server
+                    //await EmailService.Send(req.Query["from"], req.Query["to"], $"New Order #{orderId}", renderer.RenderEmailOrder(), renderer._imagesWithNames);
                     return new ContentResult { Content = renderer.RenderEmailOrder(), ContentType = "text/html" };
 
                 }
@@ -75,7 +76,7 @@ namespace Flipdish.Recruiting.WebHookReceiver
             catch(Exception ex)
             {
 
-                log.LogError(ex, $"Error occured during processing of Rquest ");
+                log.LogError(ex, $"Error occured during processing of Request ");
                 throw ex;
             }
 
@@ -102,16 +103,20 @@ namespace Flipdish.Recruiting.WebHookReceiver
         private static List<int> ParseStoreIds(string[] storeIdParams)
         {
             var storeIds = new List<int>();
+            int storeId;
             foreach (var storeIdString in storeIdParams)
             {
-                int storeId = 0;
+
                 try
                 {
                     storeId = int.Parse(storeIdString);
+                    storeIds.Add(storeId);
                 }
-                catch (Exception) { }
+                catch (Exception)
+                {
+                    
+                }
 
-                storeIds.Add(storeId);
             }
 
             return storeIds;

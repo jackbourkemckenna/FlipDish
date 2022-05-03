@@ -220,18 +220,19 @@ namespace Flipdish.Recruiting.WebHookReceiver
             string templateStr = GetLiquidFileAsString("PreorderPartial.liquid");
             Template template = Template.Parse(templateStr);
 
-            DateTime reqForLocal = _order.RequestedForTime.Value.UtcToLocalTime(_order.Store.StoreTimezone);
+            DateTime reqForLocal = _order.RequestedForTime.Value;
+          
 
-            string reqestedForDateStr = EtaResponseMethods.GetDateString(reqForLocal);
+            string resREQUESTED_FOR = EtaResponseMethods.GetDateString(reqForLocal);
             string reqestedForTimeStr = EtaResponseMethods.GetClocksToString(reqForLocal);
+            string resPREORDER_FOR = EtaResponseMethods.GetPreOrdered(reqForLocal);
 
-            string resPREORDER_FOR = "PREORDER FOR";
 
             var paramaters = new RenderParameters(CultureInfo.CurrentCulture)
             {
                 LocalVariables = Hash.FromAnonymousObject(new
                 {
-                    reqestedForDateStr,
+                    resREQUESTED_FOR,
                     reqestedForTimeStr,
                     resPREORDER_FOR
                 })
