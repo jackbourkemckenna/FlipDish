@@ -14,7 +14,7 @@ using System.Collections.Generic;
 using System.Runtime.Serialization;
 using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
-namespace Flipdish.Recruiting.WebhookReceiver.Models
+namespace Flipdish.Recruiting.WebHookReceiver.Models
 {
     /// <summary>
     /// Customer summary

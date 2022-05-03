@@ -1,5 +1,5 @@
 ﻿
-namespace Flipdish.Recruiting.WebhookReceiver.Helpers
+namespace Flipdish.Recruiting.WebHookReceiver.Helpers
 {
     static class CurrencyFilter
     {

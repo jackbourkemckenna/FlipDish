@@ -1,6 +1,6 @@
 using System;
 
-namespace Flipdish.Recruiting.WebhookReceiver.Helpers
+namespace Flipdish.Recruiting.WebHookReceiver.Helpers
 {
     public enum EtaResponse
     {
@@ -28,6 +28,25 @@ namespace Flipdish.Recruiting.WebhookReceiver.Helpers
         public static string GetClocksToString(DateTime requestedTime)
         {
             return requestedTime.ToString("HH:mm");
+        }
+
+        public static string GetPreOrdered(DateTime requestedTime)
+        {
+            if (requestedTime.Date == DateTime.Now.Date)
+            {
+                return $"PREORDER FOR {EtaResponse.TodayAt}: {requestedTime}";
+            } 
+            if (requestedTime.Date == DateTime.Now.AddDays(1).Date)
+            {
+                return $"PREORDER FOR {EtaResponse.TomorrowAt}: {requestedTime}";
+            }
+            if (requestedTime.Date.Minute < DateTime.Now.Date.Minute)
+            {
+                return $"PREORDER FOR  {EtaResponse.InMinutes}: {requestedTime}";
+            }
+            {
+                return $"PREORDER FOR {EtaResponse.AtDateTime}: {requestedTime}";
+            }
         }
     }
 }

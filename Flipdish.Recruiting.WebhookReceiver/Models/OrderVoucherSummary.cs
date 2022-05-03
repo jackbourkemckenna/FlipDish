@@ -15,7 +15,7 @@ using System.Runtime.Serialization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using System.ComponentModel.DataAnnotations;
-namespace Flipdish.Recruiting.WebhookReceiver.Models
+namespace Flipdish.Recruiting.WebHookReceiver.Models
 {
     /// <summary>
     /// Voucher summary

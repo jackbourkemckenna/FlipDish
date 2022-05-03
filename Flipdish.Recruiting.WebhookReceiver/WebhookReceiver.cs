@@ -8,26 +8,27 @@ using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using Flipdish.Recruiting.WebhookReceiver.Models;
 using System.Collections.Generic;
+using Flipdish.Recruiting.WebHookReceiver.Models;
 
-namespace Flipdish.Recruiting.WebhookReceiver
+namespace Flipdish.Recruiting.WebHookReceiver
 {
-    public static class WebhookReceiver
+    public static class WebHookReceiver
     {
-        [FunctionName("WebhookReceiver")]
+        
+        [FunctionName("WebHookReceiver")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
-            ILogger log,
-            ExecutionContext context)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req, ILogger log, ExecutionContext context) 
         {
-            int? orderId = null;
             try
             {
                 log.LogInformation("C# HTTP trigger function processed a request.");
 
-                OrderCreatedWebhook orderCreatedWebhook;
+                OrderCreatedWebHook orderCreatedWebHook;
+                var requestBody = await RequestBody(req);
 
+                // move this to a test project create mock request based on the json file
+                // can you run integration test azure function?
                 string test = req.Query["test"];
                 if(req.Method == "GET" && !string.IsNullOrEmpty(test))
                 {
@@ -35,75 +36,90 @@ namespace Flipdish.Recruiting.WebhookReceiver
                     var templateFilePath = Path.Combine(context.FunctionAppDirectory, "TestWebhooks", test);
                     var testWebhookJson = new StreamReader(templateFilePath).ReadToEnd();
 
-                    orderCreatedWebhook = JsonConvert.DeserializeObject<OrderCreatedWebhook>(testWebhookJson);
+                    orderCreatedWebHook = JsonConvert.DeserializeObject<OrderCreatedWebHook>(testWebhookJson);
                 }
-                else if (req.Method == "POST")
+                else if (req.Method == "POST" && !string.IsNullOrEmpty(requestBody))
                 {
-                    string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-                    orderCreatedWebhook = JsonConvert.DeserializeObject<OrderCreatedWebhook>(requestBody);
+                   
+                    orderCreatedWebHook = JsonConvert.DeserializeObject<OrderCreatedWebHook>(requestBody);
                 }
                 else
                 {
-                    throw new Exception("No body found or test param.");
+                    return new ContentResult { Content = $"No body found or test param.", ContentType = "text/html" };
                 }
-                OrderCreatedEvent orderCreatedEvent = orderCreatedWebhook.Body;
 
-                orderId = orderCreatedEvent.Order.OrderId;
-                List<int> storeIds = new List<int>();
+                var orderCreatedEvent = orderCreatedWebHook.Body;
+                var orderId = orderCreatedEvent.Order.OrderId;
                 string[] storeIdParams = req.Query["storeId"].ToArray();
-                if (storeIdParams.Length > 0)
-                {
-                    foreach (var storeIdString in storeIdParams)
-                    {
-                        int storeId = 0;
-                        try 
-                        {
-                            storeId = int.Parse(storeIdString);
-                        }
-                        catch(Exception) {}
-                        
-                        storeIds.Add(storeId);
-                    }
-
-                    if (!storeIds.Contains(orderCreatedEvent.Order.Store.Id.Value))
-                    {
-                        log.LogInformation($"Skipping order #{orderId}");
-                        return new ContentResult { Content = $"Skipping order #{orderId}", ContentType = "text/html" };
-                    }
+                var storeIds = ParseStoreIds(storeIdParams);
+                if (!storeIds.Any()){
+                        log.LogInformation($"No Store ID Skipping order #{orderId}");
+                        return new ContentResult { Content = $"No Store ID Skipping order #{orderId}", ContentType = "text/html" };
                 }
-
-
-                Currency currency = Currency.EUR;
-                var currencyString = req.Query["currency"].FirstOrDefault();
-                if(!string.IsNullOrEmpty(currencyString) && Enum.TryParse(typeof(Currency), currencyString.ToUpper(), out object currencyObject))
-                {
-                    currency = (Currency)currencyObject;
-                }
-
-                var barcodeMetadataKey = req.Query["metadataKey"].First() ?? "eancode";
-
-                using EmailRenderer emailRenderer = new EmailRenderer(orderCreatedEvent.Order, orderCreatedEvent.AppId, barcodeMetadataKey, context.FunctionAppDirectory, log, currency);
                 
-                var emailOrder = emailRenderer.RenderEmailOrder();
+                var currency = CurrencyToUpper(req.Query["currency"].FirstOrDefault());
+                var barcodeMetadataKey = req.Query["metadataKey"].First() ?? "eancode";
 
                 try
                 {
-                    EmailService.Send("", req.Query["to"], $"New Order #{orderId}", emailOrder, emailRenderer._imagesWithNames);
+                    var renderer = new EmailRenderer(orderCreatedEvent.Order, orderCreatedEvent.AppId, barcodeMetadataKey, context.FunctionAppDirectory, log, (Currency)currency);
+                    //make this configurable to on or off and set up email server
+                    //await EmailService.Send(req.Query["from"], req.Query["to"], $"New Order #{orderId}", renderer.RenderEmailOrder(), renderer._imagesWithNames);
+                    return new ContentResult { Content = renderer.RenderEmailOrder(), ContentType = "text/html" };
+
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
-                    log.LogError($"Error occured during sending email for order #{orderId}" + ex);
+                    log.LogError(ex, $"Error sending email for order #{orderId}");
                 }
-
-                log.LogInformation($"Email sent for order #{orderId}.", new { orderCreatedEvent.Order.OrderId });
-
-                return new ContentResult { Content = emailOrder, ContentType = "text/html" };
             }
             catch(Exception ex)
             {
-                log.LogError(ex, $"Error occured during processing order #{orderId}");
+
+                log.LogError(ex, $"Error occured during processing of Request ");
                 throw ex;
             }
+
+            return new ContentResult { Content = $"Error when trying to render email", ContentType = "text/html" };
+        }
+
+        private static async Task<string> RequestBody(HttpRequest req)
+        {
+            var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+            return requestBody;
+        }
+
+        private static Currency? CurrencyToUpper(string currencyString)
+        {
+            if (!string.IsNullOrEmpty(currencyString) &&
+                Enum.TryParse(typeof(Currency), currencyString.ToUpper(), out object currencyUpper))
+            {
+                return (Currency)currencyUpper;
+            }
+
+            return null;
+        }
+
+        private static List<int> ParseStoreIds(string[] storeIdParams)
+        {
+            var storeIds = new List<int>();
+            int storeId;
+            foreach (var storeIdString in storeIdParams)
+            {
+
+                try
+                {
+                    storeId = int.Parse(storeIdString);
+                    storeIds.Add(storeId);
+                }
+                catch (Exception)
+                {
+                    
+                }
+
+            }
+
+            return storeIds;
         }
     }
 }
